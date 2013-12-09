@@ -1,0 +1,21 @@
+{
+    "order_rand" : false,
+    "repeat" : 10,
+    "sequence" : [
+        {
+            "choice" : [
+                { "command" : "connect sp0 0 dc0 0", "weight" : 20 },
+                { "command" : "connect sp0 0 dc1 0", "weight" : 80 },
+                { "command" : "continue", "weight" : 10 }
+            ]
+        },
+        {
+            "choice" : [
+                { "command" : "disconnect sp0 0 dc0 0", "weight" : 20 },
+                { "command" : "disconnect sp0 0 dc1 0", "weight" : 80 },
+                { "command" : "continue", "weight" : 10 }
+            ]
+        }
+    ]
+}
+

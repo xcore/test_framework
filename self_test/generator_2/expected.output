@@ -1,0 +1,20 @@
+connect sp0 0 dc0 0
+disconnect sp0 0 dc1 0
+connect sp0 0 dc1 0
+disconnect sp0 0 dc1 0
+connect sp0 0 dc1 0
+disconnect sp0 0 dc1 0
+connect sp0 0 dc1 0
+disconnect sp0 0 dc1 0
+connect sp0 0 dc0 0
+disconnect sp0 0 dc0 0
+connect sp0 0 dc1 0
+disconnect sp0 0 dc1 0
+connect sp0 0 dc1 0
+disconnect sp0 0 dc0 0
+connect sp0 0 dc1 0
+disconnect sp0 0 dc1 0
+connect sp0 0 dc1 0
+continue
+connect sp0 0 dc1 0
+disconnect sp0 0 dc0 0

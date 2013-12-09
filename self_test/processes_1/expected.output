@@ -1,0 +1,34 @@
+Success: seen match for ep0: PTP Role: Master
+Success: seen match for ep1: PTP Role: Master
+Success: seen match for ep0: MAAP reserved Talker stream #0 address: 91:E0:F0:0
+Success: seen match for ep1: PTP Role: Slave
+Success: seen match for ep1: PTP sync locked
+Success: seen match for ep1: MAAP reserved Talker stream #0 address: 91:E0:F0:0
+Success: seen match for ep0: CONNECTING Talker stream #0
+Success: seen match for ep0: Talker stream #0 ready
+Success: seen match for ep1: CONNECTING Talker stream #0
+Success: seen match for ep0: Talker stream #0 on
+Success: seen match for ep0: CONNECTING Listener sink #0
+Success: seen match for ep0: 0 -> 0
+Success: seen match for ep0: 1 -> 1
+Success: seen match for ep0: 2 -> 2
+Success: seen match for ep0: 3 -> 3
+Success: seen match for ep0: Media output 0 locked
+Success: seen match for ep0: Media output 1 locked
+Success: seen match for ep0: Media output 2 locked
+Success: seen match for ep0: Media output 3 locked
+Success: seen match for ep1: Talker stream #0 ready
+Success: seen match for ep1: Talker stream #0 on
+Success: seen match for ep1: CONNECTING Listener sink #0
+Success: seen match for ep1: 0 -> 0
+Success: ep0: lost lock not seen in 10.0 seconds
+Success: seen match for ep1: 1 -> 1
+Success: seen match for ep1: 2 -> 2
+Success: seen match for ep1: 3 -> 3
+Success: seen match for ep1: Media output 0 locked
+Success: seen match for ep1: Media output 1 locked
+Success: seen match for ep1: Media output 2 locked
+Success: seen match for ep1: Media output 3 locked
+Success: ep1: lost lock not seen in 10.0 seconds
+Test passed
+Exiting - killing all child processes
