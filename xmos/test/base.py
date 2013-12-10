@@ -331,7 +331,7 @@ class NoneOf(SetBasedWaitable):
       (event_completed, event_started, event_timedout) = event.completes(process, string)
 
       if event_completed or event_started:
-        testError("Seen NoneOf event %s:\n   Pattern: %s,\n   Actual: %s" % (event.process, event.pattern, string))
+        testError("Seen NoneOf event %s:\n   Pattern: '%s'\n   Actual: '%s'" % (event.process, event.pattern, string))
         self.cancelTimeouts()
         self.s.clear()
         break

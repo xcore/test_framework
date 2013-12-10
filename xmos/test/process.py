@@ -10,6 +10,9 @@ from xmos.test.base import *
 """
 entities = {}
 
+def getEntities():
+  return entities
+
 def chomp(s):
   """ Remove any trailing newline characters
   """
