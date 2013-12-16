@@ -17,8 +17,7 @@ class Master():
     if completed or started:
       if process in activeProcesses and test_config.prune_on_match:
         activeProcesses[process].pruneExpectHistory(string)
-      if test_config.verbose:
-        print "Events remaining:", self.expected
+      log_debug("Events remaining: %s" % self.expected)
 
     if completed:
       self.expected = None

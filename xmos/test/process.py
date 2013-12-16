@@ -5,6 +5,7 @@ import re
 import os
 import datetime
 from xmos.test.base import *
+from xmos.test.xmos_logging import *
 
 """ Global list of all known entities
 """
@@ -27,11 +28,8 @@ class Process(protocol.ProcessProtocol):
     self.master = master
     self.output_history = []
     self.error_patterns = set()
-    self.verbose = False
     self.output_file = None
 
-    if 'verbose' in kwargs:
-      self.verbose = kwargs['verbose']
     if 'output_file' in kwargs:
       self.output_file = open(kwargs['output_file'], 'w')
 
@@ -41,40 +39,32 @@ class Process(protocol.ProcessProtocol):
     activeProcesses[self.name] = self
 
   def log(self, message):
-    """ Log either to a file or to the console. When logging to the console
-      then add the process name as a prefix
+    """ Log to the process log and to the full log.
     """
     now = datetime.datetime.now()
+    log_debug("%s: %s: %s" % (now.time(), self.name, message))
     if self.output_file:
       self.output_file.write("%s: %s" % (now.time(), message))
       self.output_file.flush()
       os.fsync(self.output_file.fileno())
-    else:
-      sys.stdout.write("%s: %s: %s" % (now.time(), self.name, message))
-      sys.stdout.flush()
 
   def connectionMade(self):
     self.log("connection made\n")
 
   def inConnectionLost(self):
-#    print "%s: stdin is closed!" % self.name
-    pass
+    log_debug("%s: stdin is closed!" % self.name)
 
   def outConnectionLost(self):
-#    print "%s: The child closed their stdout" % self.name
-    pass
+    log_debug("%s: The child closed their stdout" % self.name)
 
   def errConnectionLost(self):
-#    print "%s: The child closed their stderr" % self.name
-    pass
-    
+    log_debug("%s: The child closed their stderr" % self.name)
+
   def processExited(self, reason):
-#    print "%s: process exited, status %d" % (self.name, reason.value.exitCode)
-    pass
+    log_debug("%s: process exited, status %d" % (self.name, reason.value.exitCode))
 
   def processEnded(self, reason):
-#    print "%s: process ended, status %d" % (self.name, reason.value.exitCode)
-    pass
+    log_debug("%s: process ended, status %d" % (self.name, reason.value.exitCode))
 
   def outReceived(self, data):
     self.errReceived(data)
@@ -87,8 +77,7 @@ class Process(protocol.ProcessProtocol):
 
     for i, line in enumerate(lines):
       if line.endswith('\n'):
-        if self.verbose or self.output_file:
-          self.log(line)
+        self.log(line)
         self.output_history.append(line)
 
         # Need to check error pattern before calling master as the master may change
@@ -129,10 +118,8 @@ class Process(protocol.ProcessProtocol):
   def sendLine(self, command):
     """ Send a given command to a process
     """
-    if self.verbose:
-      self.log("Send: '%s'" % command)
-
-    print "Send: '%s'" % command
+    self.log("Send: '%s'" % command)
+    log_info("Send: '%s'" % command)
     self.transport.write(command + '\r\n')
 
   def checkErrorPatterns(self, data):

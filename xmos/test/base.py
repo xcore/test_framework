@@ -7,6 +7,8 @@ import sys
 import signal
 import string
 
+from xmos.test.xmos_logging import *
+
 """ Global list of all active processes
 """
 activeProcesses = {}
@@ -49,7 +51,7 @@ def testShutdown():
   else:
     """ Ensure that all sub-processes are killed on exit
     """
-    print "Exiting - killing all child processes"
+    log_info("Exiting - killing all child processes")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     os.kill(-os.getpgid(os.getpid()), signal.SIGINT)
 
@@ -66,12 +68,6 @@ def matches(expect_process, pattern, process, string):
 
   return matchesPattern(pattern, string)
 
-def testError(reason="", critical=False):
-  test_state.error_count += 1
-  print "Error: %s " % reason
-  if critical and test_state.reactor_running:
-    test_state.reactor_running = False
-    reactor.stop()
 class reprwrapper(object):
   """ A wrapper class so that functions can control their __repr__ output
   """
@@ -94,7 +90,7 @@ def testTimeout(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Errors should return true.
   """
-  testError("timeout after waiting %.1f for %s: '%s'" % (timeout, process, pattern), True)
+  testError("timeout after waiting %.1f for %s: '%s'" % (timeout, process, pattern), critical=True)
   return True
 
 @withrepr(lambda x: "%s" % x.__name__)
@@ -102,7 +98,7 @@ def testTimeoutPassed(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
   """
-  print "Success: %s: %s not seen in %.1f seconds" % (process, pattern, timeout)
+  log_info("Success: %s: %s not seen in %.1f seconds" % (process, pattern, timeout))
   return False
 
 @withrepr(lambda x: "%s" % x.__name__)
@@ -110,11 +106,17 @@ def testTimeoutIgnore(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
   """
-  print "Ignoring: %s: %s not seen in %.1f seconds" % (process, pattern, timeout)
+  log_info("Ignoring: %s: %s not seen in %.1f seconds" % (process, pattern, timeout))
   return False
 
+def testError(reason="", critical=False):
+  test_state.error_count += 1
+  log_error("%s" % reason)
+  if critical and test_state.reactor_running:
+    test_state.reactor_running = False
+    reactor.stop()
+
 def testStart(testFunction, args):
-  test_config.verbose = args.verbose
   test_state.stopped = False
 
   # Register a callback to ensure that all processes are killed before exiting
@@ -126,10 +128,7 @@ def testStart(testFunction, args):
   reactor.run()
 
 def testComplete(reactor):
-  if test_state.error_count > 0:
-    print "Test failed with %d errors" % test_state.error_count
-  else:
-    print "Test passed"
+  print_status_summary()
   if test_state.reactor_running:
     test_state.reactor_running = False
     reactor.stop()
@@ -147,9 +146,6 @@ class TestConfig(object):
   """
   prune_on_match = True
 
-  """ verbose: when set will cause increased debug messages to be printed
-  """
-  verbose = False
 
 class TestState(object):
   """ Keep track of test state as it runs. Currently this is:
@@ -218,15 +214,13 @@ class Expected(Waitable):
 
   def registerTimeouts(self, master):
     if self.timeout_time > 0:
-      if test_config.verbose:
-        print "Register timeout %s: %s %.1f" % (self.process, self.pattern, self.timeout_time)
+      log_debug("Register timeout %s: %s %.1f" % (self.process, self.pattern, self.timeout_time))
       self.timeout = reactor.callLater(self.timeout_time, self.timedOut)
       self.master = master
 
   def cancelTimeouts(self):
     if self.timeout:
-      if test_config.verbose:
-        print "Cancel timeout %s: %s" % (self.process, self.pattern)
+      log_debug("Cancel timeout %s: %s" % (self.process, self.pattern))
       self.timeout.cancel()
       self.timeout = None
 
@@ -238,7 +232,7 @@ class Expected(Waitable):
 
     if matches(self.process, self.pattern, process, string):
       self.cancelTimeouts()
-      print "Success: seen match for %s: %s" % (self.process, self.pattern)
+      log_info("Success: seen match for %s: %s" % (self.process, self.pattern))
       return (True, True, False)
 
     return (False, False, False)
@@ -256,7 +250,7 @@ class Expected(Waitable):
     self.master.timedOut(done)
 
   def __repr__(self):
-    return "%s: '%s' %d(%s) %s" % (
+    return "%s: '%s', timeout: %d, %s, %s" % (
         self.process, self.pattern, self.timeout_time, self.timedout, self.func.__repr__()
       )
 
@@ -350,7 +344,7 @@ class NoneOf(SetBasedWaitable):
       (event_completed, event_started, event_timedout) = event.completes(process, string)
 
       if event_completed or event_started:
-        testError("Seen NoneOf event %s:\n   Pattern: %s\n   Actual: %s" % (event.process, event.pattern, string))
+        testError("Seen NoneOf event %s:\n   Pattern: %s\n   Actual: %s" % (event.process, event.pattern, string), critical=True)
         self.cancelTimeouts()
         self.s.clear()
         break
@@ -425,6 +419,6 @@ test_config = TestConfig()
 
 def getParser():
   parser = argparse.ArgumentParser(description='Automated test')
-  parser.add_argument('--verbose', dest='verbose',
-      action='store_true', help='enable verbose mode')
+  parser.add_argument('--logfile', dest='logfile',
+  action='store_true', help='log file to be used', default='run.log')
   return parser

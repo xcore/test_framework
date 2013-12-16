@@ -7,6 +7,7 @@ from twisted.internet.defer import inlineCallbacks
 import xmos.test.process as process
 import xmos.test.master as master
 import xmos.test.base as base
+import xmos.test.xmos_logging as xmos_logging
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected
 
 endpoints = []
@@ -55,6 +56,8 @@ if __name__ == "__main__":
   parser.add_argument(dest="ep0_bug", nargs="?", type=int, default=-1)
   parser.add_argument(dest="ep1_bug", nargs="?", type=int, default=-1)
   args = parser.parse_args()
+
+  xmos_logging.configure_logging(level_file='DEBUG', filename=args.logfile)
 
   # Create the master to pass to each process
   master = master.Master()

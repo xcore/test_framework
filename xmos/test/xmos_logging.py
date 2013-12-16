@@ -57,4 +57,6 @@ def print_status_summary():
         print '%d ERROR%s and %d WARNING%s detected' % (
             counts['errors'], ('' if counts['errors'] == 1 else 'S'),
             counts['warnings'], ('' if counts['warnings'] == 1 else 'S'))
+    else:
+      print "Test passed"
 
