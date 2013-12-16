@@ -15,7 +15,7 @@ for d in test_dirs:
   # This was done using subprocess.call, but that fails to work with the
   # tests using the Twisted framework
   os.chdir(os.path.join(top_dir, d))
-  os.system("python test.py > test.output")
+  os.system("python test.py > test.output 2>&1")
 
   err = subprocess.call(["diff","test.output","expected.output"])
 

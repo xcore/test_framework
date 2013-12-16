@@ -31,4 +31,3 @@ Success: seen match for ep1: Media output 2 locked
 Success: seen match for ep1: Media output 3 locked
 Success: ep1: lost lock not seen in 10.0 seconds
 Test passed
-Exiting - killing all child processes

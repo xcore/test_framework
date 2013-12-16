@@ -51,7 +51,7 @@ def testShutdown():
   else:
     """ Ensure that all sub-processes are killed on exit
     """
-    log_info("Exiting - killing all child processes")
+    log_debug("Exiting - killing all child processes")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     os.kill(-os.getpgid(os.getpid()), signal.SIGINT)
 
