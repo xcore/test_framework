@@ -13,7 +13,7 @@ class Master():
     """
     assert self.expected
     (completed, started, timedout) = self.expected.completes(process, string)
-    
+
     if completed or started:
       if process in activeProcesses and test_config.prune_on_match:
         activeProcesses[process].pruneExpectHistory(string)

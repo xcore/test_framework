@@ -32,7 +32,6 @@ class Process(protocol.ProcessProtocol):
 
     if 'verbose' in kwargs:
       self.verbose = kwargs['verbose']
-
     if 'output_file' in kwargs:
       self.output_file = open(kwargs['output_file'], 'w')
 
@@ -88,10 +87,8 @@ class Process(protocol.ProcessProtocol):
 
     for i, line in enumerate(lines):
       if line.endswith('\n'):
-
         if self.verbose or self.output_file:
           self.log(line)
-
         self.output_history.append(line)
 
         # Need to check error pattern before calling master as the master may change
@@ -107,7 +104,7 @@ class Process(protocol.ProcessProtocol):
 
       elif i == len(lines)-1:
         self.full_line += lines[-1]
-  
+
   def getExpectHistory(self):
     """ Build up a copy so that there are no iteration issues
        when the history is pruned by a process checking the

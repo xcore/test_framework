@@ -115,6 +115,6 @@ def json_hooks(dct):
     repeat = dct.get('repeat', 1)
     weight = dct.get('weight', 1)
     return Command(dct['command'], weight=weight, repeat=repeat)
-  
+
   return dct
 

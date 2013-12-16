@@ -44,7 +44,7 @@ def testShutdown():
     for child in parent.get_children(recursive=True):
       child.kill()
     parent.kill()
-  
+
   else:
     """ Ensure that all sub-processes are killed on exit
     """
@@ -71,7 +71,6 @@ def testError(reason="", critical=False):
   if critical and test_state.reactor_running:
     test_state.reactor_running = False
     reactor.stop()
-  
 def testTimeout(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Errors should return true.
@@ -85,14 +84,14 @@ def testTimeoutPassed(process, pattern, timeout):
   """
   print "Success: %s: %s not seen in %.1f seconds" % (process, pattern, timeout)
   return False
-  
+
 def testTimeoutIgnore(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
   """
   print "Ignoring: %s: %s not seen in %.1f seconds" % (process, pattern, timeout)
   return False
-  
+
 def testStart(testFunction, args):
   test_config.verbose = args.verbose
   test_state.stopped = False
@@ -131,7 +130,6 @@ class TestConfig(object):
   """
   verbose = False
 
-
 class TestState(object):
   """ Keep track of test state as it runs. Currently this is:
       - number of errors seen
@@ -140,7 +138,7 @@ class TestState(object):
 
   """ Keep track of whether the reactor is running to prevent it being stopped
     more than once.
-  """ 
+  """
   reactor_running = False
 
 
@@ -229,7 +227,7 @@ class Expected(Waitable):
 
     # Call the function registered for timeouts
     done = self.func(self.process, self.pattern, self.timeout_time)
-    
+
     # Remove the timeout so that we don't try to cancel it when it has fired
     self.timeout = None
     self.timedout = True
@@ -261,7 +259,7 @@ class AllOf(SetBasedWaitable):
       (event_completed, event_started, event_timedout) = event.completes(process, string)
       started |= event_started
       timedout |= event_timedout
-      
+
       if event_completed or event_timedout:
         self.s.remove(event)
 
@@ -294,7 +292,7 @@ class OneOf(SetBasedWaitable):
       (event_completed, event_started, event_timedout) = event.completes(process, string)
       started |= event_started
       timedout |= event_timedout
-      
+
       if event_completed or event_timedout:
         to_remove |= self.s
         break
@@ -302,7 +300,7 @@ class OneOf(SetBasedWaitable):
       if event_started:
         to_remove |= self.s - set([event])
         break
-        
+
     # Update the contents of the set and cancel timeouts from all events being removed.
     self.s -= to_remove
     for event in to_remove:
@@ -366,7 +364,7 @@ class Sequence(object):
 
     assert self.l
     self.l[0].registerTimeouts(master)
-    
+
   def cancelTimeouts(self):
     if self.l:
       self.l[0].cancelTimeouts()
@@ -379,7 +377,7 @@ class Sequence(object):
     assert self.l
 
     (event_completed, started, event_timedout) = self.l[0].completes(process, string)
-      
+
     if event_completed:
       self.l[0].cancelTimeouts()
 
@@ -409,4 +407,3 @@ def getParser():
   parser.add_argument('--verbose', dest='verbose',
       action='store_true', help='enable verbose mode')
   return parser
-
