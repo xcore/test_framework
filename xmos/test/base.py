@@ -1,5 +1,6 @@
 from twisted.internet import reactor
 import argparse
+import functools
 import os
 import re
 import sys
@@ -71,6 +72,24 @@ def testError(reason="", critical=False):
   if critical and test_state.reactor_running:
     test_state.reactor_running = False
     reactor.stop()
+class reprwrapper(object):
+  """ A wrapper class so that functions can control their __repr__ output
+  """
+  def __init__(self, reprfun, func):
+    self._reprfun = reprfun
+    self._func = func
+    functools.update_wrapper(self, func)
+  def __call__(self, *args, **kw):
+    return self._func(*args, **kw)
+  def __repr__(self):
+    return self._reprfun(self._func)
+
+def withrepr(reprfun):
+    def _wrap(func):
+        return reprwrapper(reprfun, func)
+    return _wrap
+
+@withrepr(lambda x: "%s" % x.__name__)
 def testTimeout(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Errors should return true.
@@ -78,6 +97,7 @@ def testTimeout(process, pattern, timeout):
   testError("timeout after waiting %.1f for %s: '%s'" % (timeout, process, pattern), True)
   return True
 
+@withrepr(lambda x: "%s" % x.__name__)
 def testTimeoutPassed(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
@@ -85,6 +105,7 @@ def testTimeoutPassed(process, pattern, timeout):
   print "Success: %s: %s not seen in %.1f seconds" % (process, pattern, timeout)
   return False
 
+@withrepr(lambda x: "%s" % x.__name__)
 def testTimeoutIgnore(process, pattern, timeout):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
