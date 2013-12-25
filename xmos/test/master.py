@@ -90,3 +90,20 @@ class Master():
       self.deferred = None
       d.callback(remaining)
 
+  def killAllActive(self):
+    global activeProcesses
+    for (n, p) in activeProcesses.iteritems():
+      try:
+        p.kill()
+      except:
+        # process already ended
+        pass
+
+  def interruptAllActive(self):
+    global activeProcesses
+    for (n, p) in activeProcesses.iteritems():
+      try:
+        p.interrupt()
+      except:
+        # process already ended
+        pass

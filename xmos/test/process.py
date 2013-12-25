@@ -61,10 +61,16 @@ class Process(protocol.ProcessProtocol):
     log_debug("%s: The child closed their stderr" % self.name)
 
   def processExited(self, reason):
-    log_debug("%s: process exited, status %d" % (self.name, reason.value.exitCode))
+    if reason.value.exitCode:
+      log_debug("%s: process exited, status %d" % (self.name, reason.value.exitCode))
+    else:
+      log_debug("%s: process exited, no exit code" % (self.name))
 
   def processEnded(self, reason):
-    log_debug("%s: process ended, status %d" % (self.name, reason.value.exitCode))
+    if reason.value.exitCode:
+      log_debug("%s: process ended, status %d" % (self.name, reason.value.exitCode))
+    else:
+      log_debug("%s: process ended, no exit code" % (self.name))
 
   def outReceived(self, data):
     self.errReceived(data)
@@ -129,6 +135,12 @@ class Process(protocol.ProcessProtocol):
 
   def registerErrorPattern(self, pattern):
     self.error_patterns.add(pattern)
+
+  def kill(self):
+    self.transport.signalProcess('KILL')
+
+  def interrupt(self):
+    self.transport.signalProcess('INT')
 
 
 class XrunProcess(Process):
