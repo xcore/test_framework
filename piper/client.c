@@ -102,7 +102,7 @@ void handle_socket(int sockfd)
     
     selected = select(max_fd+1, &readfds, NULL, NULL, NULL);
     if ((selected < 0) && (errno != EINTR)) {
-      printf("Client: select error\n");
+      print_and_exit("ERROR: select error\n");
       fflush(stdout);
     }
 
@@ -110,16 +110,21 @@ void handle_socket(int sockfd)
       if ((n = read(sockfd, buff, sizeof(buff))) > 0) {
         buff[n] = '\0'; // Ensure null termination
         printf("Client: received %s\n", buff);
+      } else {
+        printf("Client: socket closed\n");
+        close(sockfd);
+        break;
       }
     }
 
     if (FD_ISSET(fileno(stdin), &readfds)) {
-      int size = sizeof(buff);
-      if (fgets(buff, size, stdin) == NULL) {
-        printf("Client: nothing from fgets\n");
-      } else {
+      if (fgets(buff, sizeof(buff), stdin)) {
         printf("Client: sending: %s\n", buff);
-        write(sockfd, buff, strlen(buff));
+        if (write(sockfd, buff, strlen(buff)) == -1)
+          print_and_exit("ERROR: write failed\n");
+        
+      } else {
+        printf("Client: nothing from fgets\n");
       }
     }
   }
@@ -129,5 +134,6 @@ int main(int argc, char *argv[])
 {
   int sockfd = connect_to_server("127.0.0.1", "5000");
   handle_socket(sockfd);
+  printf("Client: done\n");
   return 0;
 }

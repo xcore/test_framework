@@ -11,8 +11,7 @@ int main(int argc, char *argv[])
   char buff[MAX_RECV_BYTES];
   FILE *fd = fopen("tmp.txt", "w");
 
-  setvbuf(stdout, NULL, _IOLBF, 0);
-
+//  setvbuf(stdout, NULL, _IOLBF, 0);
   printf("Tester: starting\n");
 
   while (1) {
@@ -20,6 +19,8 @@ int main(int argc, char *argv[])
       printf("Tester: received %s\n", buff);
       fwrite(buff, 1, strlen(buff), fd);
       fflush(fd);
+      if (strncmp(buff, "exit", 4) == 0)
+        break;
     } else {
       break;
     }
