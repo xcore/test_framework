@@ -52,6 +52,10 @@ char **tokenize(char *str, const char *const tokens)
   args = realloc(args, sizeof(char*) * (n_spaces+1));
   args[n_spaces] = 0;
 
+  printf ("Server: Running: ");
+  for (int i = 0; i < (n_spaces+1); ++i)
+    printf ("args[%d] = %s\n", i, args[i]);
+
   return args;
 }
 
@@ -73,8 +77,8 @@ void child_process(int stdin_pipe[2], int stdout_pipe[2], int stderr_pipe[2], ch
   close(stdin_pipe[1]);
 
   // Call binary and ensure that stdout is put into line-bufferd mode
-  char *const envs[] = {"DYLD_INSERT_LIBRARIES=/Users/peter/lib/line-buffer.so", NULL};
-  execve(args[0], args, envs);
+  putenv("DYLD_INSERT_LIBRARIES=/Users/peter/lib/line-buffer.so");
+  execvp(args[0], args);
 
   free(args);
 }
