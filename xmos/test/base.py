@@ -1,4 +1,5 @@
 from twisted.internet import reactor
+from twisted.internet import defer
 import argparse
 import functools
 import os
@@ -12,6 +13,14 @@ from xmos.test.xmos_logging import *
 """ Global list of all active processes
 """
 activeProcesses = {}
+
+def sleep(secs):
+  """ A sleep function to be used within tests. Called using yield, eg:
+        yield base.sleep(1)
+  """
+  d = defer.Deferred()
+  reactor.callLater(secs, d.callback, None)
+  return d
 
 def getActiveProcesses():
   return activeProcesses
