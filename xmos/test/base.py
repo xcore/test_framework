@@ -14,6 +14,8 @@ from xmos.test.xmos_logging import *
 """
 activeProcesses = {}
 
+defaultToCriticalFailure = True
+
 def sleep(secs):
   """ A sleep function to be used within tests. Called using yield, eg:
         yield base.sleep(1)
@@ -95,15 +97,17 @@ def withrepr(reprfun):
     return _wrap
 
 @withrepr(lambda x: "%s" % x.__name__)
-def testTimeout(process, pattern, timeout):
+def testTimeout(process, pattern, timeout, errorFn, critical = None):
   """ Timeout functions return whether or not they should complete the current expected.
     Errors should return true.
   """
-  testError("timeout after waiting %.1f for %s: '%s'" % (timeout, process, pattern), critical=True)
+  if critical == None:
+    critical = defaultToCriticalFailure
+  errorFn("timeout after waiting %.1f for %s: '%s'" % (timeout, process, pattern), critical=critical)
   return True
 
 @withrepr(lambda x: "%s" % x.__name__)
-def testTimeoutPassed(process, pattern, timeout):
+def testTimeoutPassed(process, pattern, timeout, errorFn, critical = None):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
   """
@@ -111,7 +115,7 @@ def testTimeoutPassed(process, pattern, timeout):
   return False
 
 @withrepr(lambda x: "%s" % x.__name__)
-def testTimeoutIgnore(process, pattern, timeout):
+def testTimeoutIgnore(process, pattern, timeout, errorFn, critical = None):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
   """
@@ -210,13 +214,18 @@ class SetBasedWaitable(Waitable):
 
 class Expected(Waitable):
 
-  def __init__(self, process, pattern, timeout_time=0, func=testTimeout):
+  def __init__(self, process, pattern, timeout_time=0, func=testTimeout,
+               errorFn=testError, critical=None):
+    if critical == None:
+      critical = defaultToCriticalFailure
     self.process = process
     self.pattern = pattern
     self.timeout = None
     self.timeout_time = timeout_time
     self.func = func
     self.timedout = False
+    self.errorFn = errorFn
+    self.critical = critical
 
   def getProcesses(self):
     return set([self.process])
@@ -250,7 +259,8 @@ class Expected(Waitable):
     assert self.timeout
 
     # Call the function registered for timeouts
-    done = self.func(self.process, self.pattern, self.timeout_time)
+    done = self.func(self.process, self.pattern, self.timeout_time,
+                     errorFn = self.errorFn, critical = self.critical)
 
     # Remove the timeout so that we don't try to cancel it when it has fired
     self.timeout = None
@@ -335,13 +345,17 @@ class OneOf(SetBasedWaitable):
 
 
 class NoneOf(SetBasedWaitable):
-  def __init__(self, l):
+  def __init__(self, l, critical = None, errorFn = testError):
     """ Takes a list of events which should not be seen. Their timeout
       functions need to be changed to not be errors.
     """
     super(NoneOf, self).__init__('NoneOf', l)
     for event in self.s:
       event.func = testTimeoutPassed
+    if critical == None:
+      critical = defaultToCriticalFailure
+    self.critical = critical
+    self.errorFn = errorFn
 
   def completes(self, process, string):
     """ Finds if there is one of the entries which completes or starts
@@ -353,7 +367,7 @@ class NoneOf(SetBasedWaitable):
       (event_completed, event_started, event_timedout) = event.completes(process, string)
 
       if event_completed or event_started:
-        testError("Seen NoneOf event %s:\n   Pattern: %s\n   Actual: %s" % (event.process, event.pattern, string), critical=True)
+        self.errorFn("Seen NoneOf event %s:\n   Pattern: %s\n   Actual: %s" % (event.process, event.pattern, string), critical=self.critical)
         self.cancelTimeouts()
         self.s.clear()
         break

@@ -23,12 +23,17 @@ def chomp(s):
 class Process(protocol.ProcessProtocol):
   full_line = ''
 
-  def __init__(self, name, master, **kwargs):
+  def __init__(self, name, master, errorFn = testError,
+               criticalErrors = None, **kwargs):
+    if criticalErrors == None:
+      criticalErrors = defaultToCriticalFailure
     self.name = name
     self.master = master
     self.output_history = []
     self.error_patterns = set()
     self.output_file = None
+    self.errorFn = errorFn
+    self.criticalErrors = criticalErrors
 
     if 'output_file' in kwargs:
       self.output_file = open(kwargs['output_file'], 'w')
@@ -129,12 +134,14 @@ class Process(protocol.ProcessProtocol):
     self.transport.write(command + '\r\n')
 
   def checkErrorPatterns(self, data):
-    for pattern in self.error_patterns:
+    for (pattern, errorFn) in self.error_patterns:
       if matchesPattern(pattern, data):
-        testError("found %s: %s" % (self.name, data), True)
+        errorFn("found %s: %s" % (self.name, data), self.criticalErrors)
 
-  def registerErrorPattern(self, pattern):
-    self.error_patterns.add(pattern)
+  def registerErrorPattern(self, pattern, errorFn=None):
+    if not errorFn:
+      errorFn = self.errorFn
+    self.error_patterns.add((pattern, errorFn))
 
   def kill(self):
     self.transport.signalProcess('KILL')
