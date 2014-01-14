@@ -215,7 +215,8 @@ class SetBasedWaitable(Waitable):
 class Expected(Waitable):
 
   def __init__(self, process, pattern, timeout_time=0, func=testTimeout,
-               errorFn=testError, critical=None):
+               errorFn=testError, critical=None,
+               completionFn=None, completionArgs=None):
     if critical == None:
       critical = defaultToCriticalFailure
     self.process = process
@@ -226,6 +227,8 @@ class Expected(Waitable):
     self.timedout = False
     self.errorFn = errorFn
     self.critical = critical
+    self.completionFn = completionFn
+    self.completionArgs = completionArgs
 
   def getProcesses(self):
     return set([self.process])
@@ -251,6 +254,11 @@ class Expected(Waitable):
     if matches(self.process, self.pattern, process, string):
       self.cancelTimeouts()
       log_info("Success: seen match for %s: %s" % (self.process, self.pattern))
+
+      # Upon completion call the completion hook if it has been registered
+      if self.completionFn:
+        self.completionFn(self.completionArgs)
+
       return (True, True, False)
 
     return (False, False, False)
