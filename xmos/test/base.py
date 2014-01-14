@@ -14,7 +14,7 @@ from xmos.test.xmos_logging import *
 """
 activeProcesses = {}
 
-defaultToCriticalFailure = True
+defaultToCriticalFailure = False
 
 def sleep(secs):
   """ A sleep function to be used within tests. Called using yield, eg:
