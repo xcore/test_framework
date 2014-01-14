@@ -124,6 +124,7 @@ class Process(protocol.ProcessProtocol):
   def clearExpectHistory(self):
     """ Clear the entire history of values seen
     """
+    log_debug("%s: clearing expect history" % self.name)
     self.output_history[:] = []
 
   def sendLine(self, command):
@@ -141,13 +142,13 @@ class Process(protocol.ProcessProtocol):
   def registerErrorPattern(self, pattern, errorFn=None):
     if not errorFn:
       errorFn = self.errorFn
-    log_debug("Registering error pattern '%s'" % pattern)
+    log_debug("%s: registering error pattern '%s'" % (self.name, pattern))
     self.error_patterns.add((pattern, errorFn))
 
   def unregisterErrorPattern(self, pattern):
     """ Remove error patterns which match the specified pattern
     """
-    log_debug("Unregistering error pattern '%s'" % pattern)
+    log_debug("%s: unregistering error pattern '%s'" % (self.name, pattern))
     self.error_patters = [ (p,e) for (p,e) in self.error_patterns if p != pattern ]
 
   def kill(self):
