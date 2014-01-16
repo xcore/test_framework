@@ -149,7 +149,7 @@ class Process(protocol.ProcessProtocol):
     """ Remove error patterns which match the specified pattern
     """
     log_debug("%s: unregistering error pattern '%s'" % (self.name, pattern))
-    self.error_patters = [ (p,e) for (p,e) in self.error_patterns if p != pattern ]
+    self.error_patterns = set([ (p,e) for (p,e) in self.error_patterns if p != pattern ])
 
   def kill(self):
     self.transport.signalProcess('KILL')
