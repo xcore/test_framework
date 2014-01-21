@@ -451,5 +451,8 @@ test_config = TestConfig()
 def getParser():
   parser = argparse.ArgumentParser(description='Automated test')
   parser.add_argument('--logfile', dest='logfile',
-  action='store_true', help='log file to be used', default='run.log')
+      action='store_true', help='log file to be used', default='run.log')
+  parser.add_argument('--summaryfile', dest='summaryfile',
+      nargs='?', help='file to write summary log to', default=None)
   return parser
+

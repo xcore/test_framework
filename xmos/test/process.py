@@ -131,7 +131,7 @@ class Process(protocol.ProcessProtocol):
     """ Send a given command to a process
     """
     self.log("Send: '%s'" % command)
-    log_info("Send: '%s'" % command)
+    log_info("%s: send: '%s'" % (self.name, command))
     self.transport.write(command + '\r\n')
 
   def checkErrorPatterns(self, data):

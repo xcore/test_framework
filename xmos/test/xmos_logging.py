@@ -40,7 +40,7 @@ def log_info(message):
 def log_debug(message):
     logging.debug('%s%s' % (indent, message))
 
-def configure_logging(level_console='INFO', level_file=None, filename='run.log'):
+def configure_logging(level_console='INFO', level_file=None, filename='run.log', summary_filename=None):
     if level_file:
         logging.basicConfig(level=eval('logging.%s' % level_file), format='%(message)s',
                 filename=os.path.join(os.getcwd(), filename), filemode='w')
@@ -49,6 +49,11 @@ def configure_logging(level_console='INFO', level_file=None, filename='run.log')
         formatter = logging.Formatter('%(message)s')
         console.setFormatter(formatter)
         logging.getLogger('').addHandler(console)
+        if summary_filename:
+            summary = logging.FileHandler(summary_filename, mode='w')
+            summary.setLevel(eval('logging.%s' % level_console))
+            summary.setFormatter(formatter)
+            logging.getLogger('').addHandler(summary)
     else:
         logging.basicConfig(level=eval('logging.%s' % level_console), format='%(message)s')
 
