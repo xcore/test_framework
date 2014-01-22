@@ -229,6 +229,10 @@ class Expected(Waitable):
     self.critical = critical
     self.completionFn = completionFn
     self.completionArgs = completionArgs
+    self.prevLine = ""
+
+  def getPrevLine(self):
+    return self.prevLine
 
   def getProcesses(self):
     return set([self.process])
@@ -248,16 +252,23 @@ class Expected(Waitable):
   def completes(self, process, string):
     """ Returns whether an event was completed, started or timedout
     """
+    self.prevLine = string
+
     if self.timedout:
       return (False, False, True)
 
     if matches(self.process, self.pattern, process, string):
-      self.cancelTimeouts()
-      log_info("Success: seen match for %s: %s" % (self.process, self.pattern))
 
       # Upon completion call the completion hook if it has been registered
       if self.completionFn:
-        self.completionFn(self.completionArgs)
+        log_info("Possible match for %s: %s" % (self.process, self.pattern))
+        res = self.completionFn(self)
+        if res == False:
+          return (False, False, False)
+
+      self.cancelTimeouts()
+      log_info("Success: seen match for %s: %s" % (self.process, self.pattern))
+
 
       return (True, True, False)
 
