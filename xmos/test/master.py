@@ -21,6 +21,7 @@ class Master():
 
     if completed:
       self.expected = None
+    return (completed, started, timedout)
 
   def checkAgainstHistory(self):
     """ Check through the existing process data history to
@@ -59,7 +60,9 @@ class Master():
 
   def receive(self, process, string):
     if self.expected:
-      self.checkReceived(process, string)
+      (completed, started, timedout) = self.checkReceived(process, string)
+      if started and not completed:
+        self.checkAgainstHistory()
 
     if not self.expected:
       self.callDeferred()
