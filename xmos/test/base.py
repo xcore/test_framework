@@ -97,7 +97,7 @@ def withrepr(reprfun):
     return _wrap
 
 @withrepr(lambda x: "%s" % x.__name__)
-def testTimeout(process, pattern, timeout, errorFn, critical = None):
+def testTimeout(process, pattern, timeout, errorFn, critical=None):
   """ Timeout functions return whether or not they should complete the current expected.
     Errors should return true.
   """
@@ -107,7 +107,7 @@ def testTimeout(process, pattern, timeout, errorFn, critical = None):
   return True
 
 @withrepr(lambda x: "%s" % x.__name__)
-def testTimeoutPassed(process, pattern, timeout, errorFn, critical = None):
+def testTimeoutPassed(process, pattern, timeout, errorFn, critical=None):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
   """
@@ -115,7 +115,7 @@ def testTimeoutPassed(process, pattern, timeout, errorFn, critical = None):
   return False
 
 @withrepr(lambda x: "%s" % x.__name__)
-def testTimeoutIgnore(process, pattern, timeout, errorFn, critical = None):
+def testTimeoutIgnore(process, pattern, timeout, errorFn, critical=None):
   """ Timeout functions return whether or not they should complete the current expected.
     Expected timeouts can be ignored.
   """
@@ -269,7 +269,6 @@ class Expected(Waitable):
       self.cancelTimeouts()
       log_info("Success: seen match for %s: %s" % (self.process, self.pattern))
 
-
       return (True, True, False)
 
     return (False, False, False)
@@ -279,7 +278,7 @@ class Expected(Waitable):
 
     # Call the function registered for timeouts
     done = self.func(self.process, self.pattern, self.timeout_time,
-                     errorFn = self.errorFn, critical = self.critical)
+                     errorFn=self.errorFn, critical=self.critical)
 
     # Remove the timeout so that we don't try to cancel it when it has fired
     self.timeout = None
@@ -364,7 +363,7 @@ class OneOf(SetBasedWaitable):
 
 
 class NoneOf(SetBasedWaitable):
-  def __init__(self, l, critical = None, errorFn = testError):
+  def __init__(self, l, critical=None, errorFn=testError):
     """ Takes a list of events which should not be seen. Their timeout
       functions need to be changed to not be errors.
     """

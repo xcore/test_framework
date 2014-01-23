@@ -23,8 +23,8 @@ def chomp(s):
 class Process(protocol.ProcessProtocol):
   full_line = ''
 
-  def __init__(self, name, master, errorFn = testError,
-               criticalErrors = None, **kwargs):
+  def __init__(self, name, master, errorFn=testError,
+               criticalErrors=None, **kwargs):
     if criticalErrors == None:
       criticalErrors = defaultToCriticalFailure
     self.name = name
