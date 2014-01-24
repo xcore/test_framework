@@ -18,6 +18,7 @@ class Object(object):
     for item in self.items:
       item.reset()
 
+
 class Command(Object):
   def __init__(self, command, weight=1, repeat=1):
     super(Command, self).__init__([], weight=weight, repeat=repeat)
