@@ -1,11 +1,19 @@
 import random
 
 class Object(object):
-  def __init__(self, items, weight=1, repeat=1):
+  def __init__(self, items, args):
     self.items = items
-    self.weight = weight
-    self.repeat = repeat
+
+    # Set default values
+    self.weight = 1
+    self.repeat = 1
+    self.order_rand = False
     self.current_repeat = 0
+    self.do_checks = True
+
+    # Get all other values from the dictionary passed in
+    for arg,value in args.iteritems():
+      setattr(self, arg, value)
 
   def __iter__(self):
     return self
@@ -20,21 +28,19 @@ class Object(object):
 
 
 class Command(Object):
-  def __init__(self, command, weight=1, repeat=1):
-    super(Command, self).__init__([], weight=weight, repeat=repeat)
-    self.command = command
+  def __init__(self, command, args):
+    super(Command, self).__init__([], args)
 
   def next(self):
     if self.current_repeat < self.repeat:
       self.current_repeat += 1
-      return self.command
+      return self
     raise StopIteration
 
 
 class Sequence(Object):
-  def __init__(self, items, weight=1, repeat=1, order_rand=False):
-    super(Sequence, self).__init__(items, weight=weight, repeat=repeat)
-    self.order_rand = order_rand
+  def __init__(self, items, args):
+    super(Sequence, self).__init__(items, args)
     self.current_index = 0
     self.start_iteration()
 
@@ -67,8 +73,8 @@ class Sequence(Object):
 
 
 class Choice(Object):
-  def __init__(self, items, weight=1, repeat=1):
-    super(Choice, self).__init__(items, weight=weight, repeat=repeat)
+  def __init__(self, items, args):
+    super(Choice, self).__init__(items, args)
     self.total_weight = sum(item.weight for item in items)
     self.start_iteration()
 
@@ -102,20 +108,13 @@ class Choice(Object):
 
 def json_hooks(dct):
   if 'sequence' in dct:
-    order_rand = dct.get('order_rand', False)
-    repeat = dct.get('repeat', 1)
-    weight = dct.get('weight', 1)
-    return Sequence(dct['sequence'], weight=weight, order_rand=order_rand, repeat=repeat)
+    return Sequence(dct['sequence'], dct)
 
   elif 'choice' in dct:
-    repeat = dct.get('repeat', 1)
-    weight = dct.get('weight', 1)
-    return Choice(dct['choice'], weight=weight, repeat=repeat)
+    return Choice(dct['choice'], dct)
 
   elif 'command' in dct:
-    repeat = dct.get('repeat', 1)
-    weight = dct.get('weight', 1)
-    return Command(dct['command'], weight=weight, repeat=repeat)
+    return Command(dct['command'], dct)
 
   return dct
 
