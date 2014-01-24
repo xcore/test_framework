@@ -130,7 +130,7 @@ class Process(protocol.ProcessProtocol):
   def sendLine(self, command):
     """ Send a given command to a process
     """
-    self.log("Send: '%s'" % command)
+    self.log("send: '%s'" % command)
     log_info("%s: send: '%s'" % (self.name, command))
     self.transport.write(command + '\r\n')
 
