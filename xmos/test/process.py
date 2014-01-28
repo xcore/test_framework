@@ -144,12 +144,19 @@ class Process(protocol.ProcessProtocol):
       errorFn = self.errorFn
     log_debug("%s: registering error pattern '%s'" % (self.name, pattern))
     self.error_patterns.add((pattern, errorFn))
+    self.printErrorPatterns()
 
   def unregisterErrorPattern(self, pattern):
     """ Remove error patterns which match the specified pattern
     """
     log_debug("%s: unregistering error pattern '%s'" % (self.name, pattern))
     self.error_patterns = set([ (p,e) for (p,e) in self.error_patterns if p != pattern ])
+    self.printErrorPatterns()
+
+  def printErrorPatterns(self):
+    prefix = "\n  %s: " % self.name
+    log_debug("%s: error patterns now:%s%s" % (self.name, prefix,
+         prefix.join([ p for (p,e) in self.error_patterns ])))
 
   def kill(self):
     self.transport.signalProcess('KILL')
