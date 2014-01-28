@@ -16,6 +16,7 @@ import xmos.test.process as process
 import xmos.test.master as master
 import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
+from xmos.test.xmos_logging import log_debug
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected
 
 endpoints = []
@@ -26,34 +27,17 @@ def runTest(args):
     with @inlineCallbacks
   """
 
-  startup = AllOf([Expected(e, "PTP Role: Master", 30) for e in endpoints])
-
-  ptpslave = OneOf([
-      Sequence([Expected(e, "PTP Role: Slave", 5),
-            Expected(e, "PTP sync locked", 1)])
-      for e in endpoints
-    ])
-
-  talker_connections = [
-      Sequence([Expected(e, "MAAP reserved Talker stream #0 address: 91:E0:F0:0", 30),
-            Expected(e, "CONNECTING Talker stream #0", 10),
-            Expected(e, "Talker stream #0 ready", 10),
-            Expected(e, "Talker stream #0 on", 10)])
-      for e in endpoints
-    ]
-
-  listener_connections = [
-      Sequence([Expected(e, "CONNECTING Listener sink #0", 30),
-            AllOf([Expected(e, "%d -> %d" % (n, n), 10) for n in range(4)]),
-            AllOf([Expected(e, "Media output %d locked" % n, 10) for n in range(4)]),
-            NoneOf([Expected(e, "lost lock", 10)])])
-      for e in endpoints
-    ]
-
+  startup = AllOf([Expected(e, "Started", 10) for e in endpoints])
+  log_debug(startup)
   yield master.expect(startup)
-  for name,process in base.getActiveProcesses().iteritems():
-    process.registerErrorPattern("PTP Role: Master")
-  yield master.expect(AllOf([ptpslave] + talker_connections + listener_connections))
+
+  next_steps = AllOf([AllOf([Expected('ep0', "Next", 10)]), AllOf([Expected('ep1', "Next", 10)])])
+  log_debug(next_steps)
+  yield master.expect(next_steps)
+
+  seq = AllOf([Sequence([Expected(e, "Count0", 10), Expected(e, "Count1", 10)]) for e in endpoints])
+  log_debug(seq)
+  yield master.expect(seq)
 
   base.testComplete(reactor)
       
@@ -76,14 +60,14 @@ if __name__ == "__main__":
 
   # Call python with unbuffered mode to enable us to see each line as it happens
   reactor.spawnProcess(ep0, 'python',
-      ['python', '-u', 'back_to_back_master.py', str(args.seed), str(args.ep0_bug)],
+      ['python', '-u', 'process_0.py', str(args.seed), str(args.ep0_bug)],
       env=os.environ)
 
   # Endpoint 1
   endpoints.append('ep1')
   ep1 = process.XrunProcess('ep1', master, verbose=True, output_file="ep1_console.log")
   reactor.spawnProcess(ep1, 'python',
-      ['python', '-u', 'back_to_back_slave.py', str(args.seed + 1), str(args.ep1_bug)],
+      ['python', '-u', 'process_1.py', str(args.seed + 1), str(args.ep1_bug)],
       env=os.environ)
 
   base.testStart(runTest, args)
