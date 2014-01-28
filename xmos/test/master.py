@@ -17,7 +17,7 @@ class Master():
     if completed or started:
       if process in activeProcesses and test_config.prune_on_match:
         activeProcesses[process].pruneExpectHistory(string)
-      log_debug("Events remaining: %s" % self.expected)
+      log_debug("Events remaining:\n%s" % self.expected)
 
     if completed:
       self.expected = None
@@ -37,6 +37,8 @@ class Master():
     activeProcesses[process].clearExpectHistory()
 
   def expect(self, expected):
+    log_debug("master expect:\n%s" % expected)
+
     # If there is nothing to expect then just continue
     if not expected:
       return []

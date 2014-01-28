@@ -8,7 +8,33 @@ import sys
 import signal
 import string
 
+import threading
+from contextlib import contextmanager
+
 from xmos.test.xmos_logging import *
+_tls = threading.local()
+
+@contextmanager
+def _nested():
+  _tls.level = getattr(_tls, "level", 0) + 1
+  try:
+    yield "   " * _tls.level
+  finally:
+    _tls.level -= 1
+
+@contextmanager
+def _recursion_lock(obj):
+  if not hasattr(_tls, "history"):
+    _tls.history = []  # can't use set(), not all objects are hashable
+  if obj in _tls.history:
+    yield True
+    return
+  _tls.history.append(obj)
+  try:
+    yield False
+  finally:
+    _tls.history.pop(-1)
+
 
 """ Global list of all active processes
 """
@@ -188,8 +214,7 @@ class Waitable(object):
 
 
 class SetBasedWaitable(Waitable):
-  def __init__(self, name, l):
-    self.name = name
+  def __init__(self, l):
     self.s = set(l)
 
   def getProcesses(self):
@@ -209,7 +234,27 @@ class SetBasedWaitable(Waitable):
       event.cancelTimeouts()
 
   def __repr__(self):
-    return "%s(%s)" % (self.name, ", ".join(str(item) for item in self.s))
+    if getattr(_tls, "level", 0) > 0:
+      return str(self)
+    else:
+      attrs = ", ".join("%s = %r" % (k, v) for k, v in self.__dict__.items())
+      return "%s(%s)" % (self.__class__.__name__, attrs)
+
+  def __str__(self):
+    with _recursion_lock(self) as locked:
+      if locked:
+        return "<...>"
+      with _nested() as indent:
+        attrs = []
+
+        for x in self.s:
+          with _nested() as indent2:
+            attrs.append("%s%r," % (indent2, x))
+
+        if not attrs:
+          return "%s{}" % (self.__class__.__name__,)
+        else:
+          return "%s: {\n%s\n%s}" % (self.__class__.__name__, "\n".join(attrs), indent)
 
 
 class Expected(Waitable):
@@ -296,7 +341,7 @@ class AllOf(SetBasedWaitable):
   def __init__(self, l):
     """ Takes a list of events that all have to be completed
     """
-    super(AllOf, self).__init__('AllOf', l)
+    super(AllOf, self).__init__(l)
 
   def completes(self, process, string):
     """ Finds if there is one of the entries which completes the match
@@ -326,7 +371,7 @@ class OneOf(SetBasedWaitable):
   def __init__(self, l):
     """ Takes a list of events of which only one has to be completed
     """
-    super(OneOf, self).__init__('OneOf', l)
+    super(OneOf, self).__init__(l)
 
   def completes(self, process, string):
     """ Finds if there is one of the entries which completes or starts
@@ -367,7 +412,7 @@ class NoneOf(SetBasedWaitable):
     """ Takes a list of events which should not be seen. Their timeout
       functions need to be changed to not be errors.
     """
-    super(NoneOf, self).__init__('NoneOf', l)
+    super(NoneOf, self).__init__(l)
     for event in self.s:
       event.func = testTimeoutPassed
     if critical == None:
@@ -452,7 +497,27 @@ class Sequence(object):
     return (completed, started, timedout)
 
   def __repr__(self):
-    return "Sequence(%s)" % " -> ".join(str(item) for item in self.l)
+    if getattr(_tls, "level", 0) > 0:
+      return str(self)
+    else:
+      attrs = ", ".join("%s = %r" % (k, v) for k, v in self.__dict__.items())
+      return "%s(%s)" % (self.__class__.__name__, attrs)
+
+  def __str__(self):
+    with _recursion_lock(self) as locked:
+      if locked:
+        return "<...>"
+      with _nested() as indent:
+        attrs = []
+
+        for x in self.l:
+          with _nested() as indent2:
+            attrs.append("%s%r," % (indent2, x))
+
+        if not attrs:
+          return "%s[]" % (self.__class__.__name__,)
+        else:
+          return "%s: [\n%s\n%s]" % (self.__class__.__name__, "\n".join(attrs), indent)
 
 
 test_state = TestState()
