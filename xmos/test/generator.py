@@ -10,6 +10,7 @@ class Object(object):
     self.order_rand = False
     self.current_repeat = 0
     self.do_checks = True
+    self.checkpoint = None
 
     # Get all other values from the dictionary passed in
     for arg,value in args.iteritems():
@@ -28,7 +29,8 @@ class Object(object):
 
 
 class Command(Object):
-  def __init__(self, command, args):
+  def __init__(self, command, args={}):
+    self.command = command
     super(Command, self).__init__([], args)
 
   def next(self):
