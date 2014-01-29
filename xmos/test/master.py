@@ -27,11 +27,16 @@ class Master():
     """ Check through the existing process data history to
       see whether the expected has already been seen.
     """
-    for process in self.expected.getProcesses():
-      for data in activeProcesses[process].getExpectHistory():
-        self.checkReceived(process, data)
-        if not self.expected:
-          return
+    changed = True
+    while changed:
+      changed = False
+      for process in self.expected.getProcesses():
+        for data in activeProcesses[process].getExpectHistory():
+          log_debug("checkAgainstHistory: %s: %s" % (process, data.strip()))
+          (completed, started, timedout) = self.checkReceived(process, data)
+          changed |= started and not completed
+          if not self.expected:
+            return
 
   def clearExpectHistory(self, process):
     activeProcesses[process].clearExpectHistory()
