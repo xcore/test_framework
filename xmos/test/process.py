@@ -43,13 +43,13 @@ class Process(protocol.ProcessProtocol):
 
     activeProcesses[self.name] = self
 
-  def log(self, message):
+  def log(self, message, level='debug'):
     """ Log to the process log and to the full log.
     """
     now = datetime.datetime.now()
-    log_debug("%s: %s: %s" % (now.time(), self.name, message))
+    eval('log_%s' % level)("%s: %s: %s" % (now.time(), self.name, message.strip()))
     if self.output_file:
-      self.output_file.write("%s: %s" % (now.time(), message))
+      self.output_file.write("%s: %s\n" % (now.time(), message.strip()))
       self.output_file.flush()
       os.fsync(self.output_file.fileno())
 
@@ -130,8 +130,7 @@ class Process(protocol.ProcessProtocol):
   def sendLine(self, command):
     """ Send a given command to a process
     """
-    self.log("send: '%s'" % command)
-    log_info("%s: send: '%s'" % (self.name, command))
+    self.log("send: '%s'" % command, level='info')
     self.transport.write(command + '\r\n')
 
   def checkErrorPatterns(self, data):
