@@ -59,9 +59,9 @@ def configure_logging(level_console='INFO', level_file=None, filename='run.log',
 
 def print_status_summary():
     if counts['errors'] or counts['warnings']:
-        print '%d ERROR%s and %d WARNING%s detected' % (
+        log_info('%d ERROR%s and %d WARNING%s detected' % (
             counts['errors'], ('' if counts['errors'] == 1 else 'S'),
-            counts['warnings'], ('' if counts['warnings'] == 1 else 'S'))
+            counts['warnings'], ('' if counts['warnings'] == 1 else 'S')))
     else:
-      print "Test passed"
+      log_info("Test passed")
 
