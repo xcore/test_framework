@@ -1,6 +1,7 @@
 from twisted.internet import reactor
 from twisted.internet import defer
 import argparse
+import datetime
 import functools
 import os
 import re
@@ -315,7 +316,8 @@ class Expected(Waitable):
 
   def registerTimeouts(self, master):
     if self.timeout_time > 0:
-      log_debug("Register timeout %s: %s %.1f" % (self.process, self.pattern, self.timeout_time))
+      now = datetime.datetime.now()
+      log_debug("%s: Register timeout %s: %s %.1f" % (now.time(), self.process, self.pattern, self.timeout_time))
       self.timeout = reactor.callLater(self.timeout_time, self.timedOut)
       self.master = master
 
