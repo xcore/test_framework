@@ -14,6 +14,37 @@ from contextlib import contextmanager
 from xmos.test.xmos_logging import *
 _tls = threading.local()
 
+LOG_ENABLED = False
+log_indent = 1
+
+def log_completes_start(entity):
+  global log_indent
+  if not LOG_ENABLED:
+    return
+
+  log_debug("%s%s" % ("  "*log_indent, entity.__class__.__name__))
+  log_indent += 1
+
+def log_completes_end(entity, result):
+  global log_indent
+  if not LOG_ENABLED:
+    return
+
+  log_debug("%s%s: %s" % ("  "*log_indent, entity.__class__.__name__, result))
+  assert(log_indent > 0)
+  log_indent -= 1
+
+def log_completes_expected(expected, process, string, result):
+  global log_indent
+  if not LOG_ENABLED:
+    return
+
+  log_debug("%s%s: '%s:%s...' match '%s:%s...' ? %s" % ("  "*log_indent, expected.__class__.__name__,
+      expected.process, expected.pattern[0:10], process, string[0:10], result))
+  assert(log_indent > 0)
+  log_indent -= 1
+
+
 @contextmanager
 def _nested():
   _tls.level = getattr(_tls, "level", 0) + 1
@@ -297,9 +328,11 @@ class Expected(Waitable):
   def completes(self, process, string):
     """ Returns whether an event was completed, started or timedout
     """
+    log_completes_start(self)
     self.prevLine = string
 
     if self.timedout:
+      log_completes_expected(self, process, string, (False, False, True))
       return (False, False, True)
 
     if matches(self.process, self.pattern, process, string):
@@ -309,13 +342,16 @@ class Expected(Waitable):
         log_info("Possible match for %s: %s" % (self.process, self.pattern))
         res = self.completionFn(self)
         if res == False:
+          log_completes_expected(self, process, string, (False, False, False))
           return (False, False, False)
 
       self.cancelTimeouts()
       log_info("Success: seen match for %s: %s" % (self.process, self.pattern))
 
+      log_completes_expected(self, process, string, (True, True, False))
       return (True, True, False)
 
+    log_completes_expected(self, process, string, (False, False, False))
     return (False, False, False)
 
   def timedOut(self):
@@ -350,6 +386,8 @@ class AllOf(SetBasedWaitable):
 
       Returns whether an event was completed, started or timedout.
     """
+    log_completes_start(self)
+
     started = False
     timedout = False
     for event in self.s:
@@ -364,6 +402,7 @@ class AllOf(SetBasedWaitable):
         break
 
     completed = not self.s
+    log_completes_end(self, (completed, started, timedout))
     return (completed, started, timedout)
 
 
@@ -382,6 +421,8 @@ class OneOf(SetBasedWaitable):
 
       Returns whether an event was completed, started or timedout.
     """
+    log_completes_start(self)
+
     started = False
     timedout = False
     to_remove = set()
@@ -404,6 +445,7 @@ class OneOf(SetBasedWaitable):
       event.cancelTimeouts()
 
     completed = not self.s
+    log_completes_end(self, (completed, started, timedout))
     return (completed, started, timedout)
 
 
@@ -425,6 +467,8 @@ class NoneOf(SetBasedWaitable):
       the match. If so, then an error has occured and the event can
       be considered complete.
     """
+    log_completes_start(self)
+
     to_remove = set()
     for event in self.s:
       (event_completed, event_started, event_timedout) = event.completes(process, string)
@@ -444,6 +488,7 @@ class NoneOf(SetBasedWaitable):
       event.cancelTimeouts()
 
     completed = not self.s
+    log_completes_end(self, (completed, completed, False))
     return (completed, completed, False)
 
 
@@ -475,8 +520,9 @@ class Sequence(object):
       it is removed.
       Considered complete if the list is now empty.
     """
-    assert self.l
+    log_completes_start(self)
 
+    assert self.l
     (event_completed, started, event_timedout) = self.l[0].completes(process, string)
 
     if event_completed:
@@ -494,6 +540,7 @@ class Sequence(object):
     # If the last event completed then return whether that was due to a timeout.
     # Otherwise the sequence hasn't timedout yet.
     timedout = event_timedout if completed else False
+    log_completes_end(self, (completed, started, timedout))
     return (completed, started, timedout)
 
   def __repr__(self):
