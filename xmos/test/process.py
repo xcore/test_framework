@@ -134,28 +134,30 @@ class Process(protocol.ProcessProtocol):
     self.transport.write(command + '\r\n')
 
   def checkErrorPatterns(self, data):
-    for (pattern, errorFn) in self.error_patterns:
+    for (pattern, errorFn, critical) in self.error_patterns:
       if matchesPattern(pattern, data):
-        errorFn("found %s: %s" % (self.name, data), self.criticalErrors)
+        errorFn("found %s: %s" % (self.name, data), critical=critical)
 
-  def registerErrorPattern(self, pattern, errorFn=None):
-    if not errorFn:
+  def registerErrorPattern(self, pattern, errorFn=None, critical=None):
+    if errorFn is None:
       errorFn = self.errorFn
+    if critical is None:
+      critical = self.criticalErrors
     log_debug("%s: registering error pattern '%s'" % (self.name, pattern))
-    self.error_patterns.add((pattern, errorFn))
+    self.error_patterns.add((pattern, errorFn, critical))
     self.printErrorPatterns()
 
   def unregisterErrorPattern(self, pattern):
     """ Remove error patterns which match the specified pattern
     """
     log_debug("%s: unregistering error pattern '%s'" % (self.name, pattern))
-    self.error_patterns = set([ (p,e) for (p,e) in self.error_patterns if p != pattern ])
+    self.error_patterns = set([ (p,e,c) for (p,e,c) in self.error_patterns if p != pattern ])
     self.printErrorPatterns()
 
   def printErrorPatterns(self):
     prefix = "\n  %s: " % self.name
     log_debug("%s: error patterns now:%s%s" % (self.name, prefix,
-         prefix.join([ p for (p,e) in self.error_patterns ])))
+         prefix.join([ p for (p,e,c) in self.error_patterns ])))
 
   def kill(self):
     self.transport.signalProcess('KILL')
@@ -167,10 +169,10 @@ class Process(protocol.ProcessProtocol):
 class XrunProcess(Process):
   def __init__(self, name, master, **kwargs):
     Process.__init__(self, name, master, **kwargs)
-    self.registerErrorPattern("xrun: Problem")
-    self.registerErrorPattern("xrun: Executable file") # does not exist
-    self.registerErrorPattern("xrun: ID is incorrect")
-    self.registerErrorPattern("xrun: No available devices")
+    self.registerErrorPattern("xrun: Problem", critical=True)
+    self.registerErrorPattern("xrun: Executable file", critical=True) # does not exist
+    self.registerErrorPattern("xrun: ID is incorrect", critical=True)
+    self.registerErrorPattern("xrun: No available devices", critical=True)
 
 
 class ControllerProcess(Process):
