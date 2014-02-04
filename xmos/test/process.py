@@ -173,6 +173,7 @@ class XrunProcess(Process):
     self.registerErrorPattern("xrun: Executable file", critical=True) # does not exist
     self.registerErrorPattern("xrun: ID is incorrect", critical=True)
     self.registerErrorPattern("xrun: No available devices", critical=True)
+    self.registerErrorPattern("xrun: The selected adapter is not connected", critical=True)
 
 
 class ControllerProcess(Process):
