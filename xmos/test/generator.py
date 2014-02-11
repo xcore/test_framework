@@ -27,6 +27,9 @@ class Object(object):
     for item in self.items:
       item.reset()
 
+  def get_command(self):
+    return getattr(self, 'command', None)
+
 
 class Command(Object):
   def __init__(self, command, args={}):
@@ -45,8 +48,14 @@ class Sequence(Object):
     super(Sequence, self).__init__(items, args)
     self.current_index = 0
     self.start_iteration()
+    self.started = False
 
   def next(self):
+    # Return self so that it can have comments attached
+    if not self.started:
+      self.started = True
+      return self
+
     while self.current_repeat < self.repeat and self.current_index < len(self.items):
       try:
         return self.items[self.indexes[self.current_index]].next()
@@ -79,8 +88,14 @@ class Choice(Object):
     super(Choice, self).__init__(items, args)
     self.total_weight = sum(item.weight for item in items)
     self.start_iteration()
+    self.started = False
 
   def next(self):
+    # Return self so that it can have comments attached
+    if not self.started:
+      self.started = True
+      return self
+
     while self.current_repeat < self.repeat:
       try:
         return self.choice.next()

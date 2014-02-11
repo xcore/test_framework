@@ -24,5 +24,8 @@ if __name__ == "__main__":
           generator.Command("*")], { 'order_rand' : True, 'repeat' : 10 })
 
   for i in seq:
-      print i.command
+    command = i.get_command()
+    if command is None:
+      continue
+    print i.command
 

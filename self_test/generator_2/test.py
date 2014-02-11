@@ -16,10 +16,13 @@ random.seed(1)
 
 if __name__ == "__main__":
 
-    import json
-    with open('test.json') as f:
-        x = json.load(f, object_hook=generator.json_hooks)
+  import json
+  with open('test.json') as f:
+    x = json.load(f, object_hook=generator.json_hooks)
 
-    for i in x:
-        print i.command
+  for i in x:
+    command = i.get_command()
+    if command is None:
+      continue
+    print i.command
 
