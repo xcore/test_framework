@@ -29,7 +29,13 @@ class Process(protocol.ProcessProtocol):
       criticalErrors = defaultToCriticalFailure
     self.name = name
     self.master = master
+
+    # History of all lines received from this process - can be cleared by master
     self.output_history = []
+
+    # Map of expected index to current index into the history
+    self.history_indexes = {}
+
     self.error_patterns = set()
     self.output_file = None
     self.errorFn = errorFn
@@ -47,7 +53,8 @@ class Process(protocol.ProcessProtocol):
     """ Log to the process log and to the full log.
     """
     now = datetime.datetime.now()
-    eval('log_%s' % level)("%s: %s: %s" % (now.time(), self.name, message.strip()))
+    if level is not None:
+      eval('log_%s' % level)("%s: %s: %s" % (now.time(), self.name, message.strip()))
     if self.output_file:
       self.output_file.write("%s: %s\n" % (now.time(), message.strip()))
       self.output_file.flush()
@@ -105,27 +112,36 @@ class Process(protocol.ProcessProtocol):
       elif i == len(lines)-1:
         self.full_line += lines[-1]
 
-  def getExpectHistory(self):
+  def getHistoryIndex(self, expect_index):
+    return self.history_indexes.get(expect_index, 0)
+
+  def setHistoryIndex(self, expect_index, history_index):
+    self.history_indexes[expect_index] = history_index
+
+  def getExpectHistory(self, expect_index):
     """ Build up a copy so that there are no iteration issues
        when the history is pruned by a process checking the
       history.
     """
-    return [h for h in self.output_history]
+    history_index = self.getHistoryIndex(expect_index)
+    return [h for h in self.output_history[history_index:]]
 
-  def pruneExpectHistory(self, data):
-    """ Prune up to and including the data value passed
+  def moveHistoryIndex(self, expect_index, data):
+    """ Return index of entry after matching entry
     """
-    while self.output_history and self.output_history[0] != data:
-      self.output_history.pop(0)
-
-    if self.output_history:
-      self.output_history.pop(0)
+    history_index = self.getHistoryIndex(expect_index)
+    history = self.output_history[history_index:]
+    if data in history:
+      self.setHistoryIndex(expect_index, history_index + history.index(data) + 1)
+    else:
+      self.setHistoryIndex(expect_index, len(self.output_history))
 
   def clearExpectHistory(self):
     """ Clear the entire history of values seen
     """
-    log_debug("%s: clearing expect history" % self.name)
+    self.log("CLEAR HISTORY", level=None)
     self.output_history[:] = []
+    self.history_indexes = {}
 
   def sendLine(self, command):
     """ Send a given command to a process

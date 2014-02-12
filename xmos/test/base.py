@@ -205,19 +205,6 @@ def testComplete(reactor):
     reactor.stop()
 
 
-class TestConfig(object):
-  """ Test Configuration:
-  """
-
-  """ prune_on_match: when set (default) then matches in the expect history
-            cause the history to be pruned up until that point
-            so that it can't be matched again. Sometimes when the
-            order doesn't matter then the pruning needs to be
-            disabled
-  """
-  prune_on_match = True
-
-
 class TestState(object):
   """ Keep track of test state as it runs. Currently this is:
       - number of errors seen
@@ -570,7 +557,6 @@ class Sequence(object):
 
 
 test_state = TestState()
-test_config = TestConfig()
 
 def getParser():
   parser = argparse.ArgumentParser(description='Automated test')
