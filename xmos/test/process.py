@@ -7,13 +7,6 @@ import datetime
 from xmos.test.base import *
 from xmos.test.xmos_logging import *
 
-""" Global list of all known entities
-"""
-entities = {}
-
-def getEntities():
-  return entities
-
 def chomp(s):
   """ Remove any trailing newline characters
   """
@@ -191,22 +184,4 @@ class XrunProcess(Process):
     self.registerErrorPattern("xrun: ID is incorrect", critical=True)
     self.registerErrorPattern("xrun: No available devices", critical=True)
     self.registerErrorPattern("xrun: The selected adapter is not connected", critical=True)
-
-
-class ControllerProcess(Process):
-  def __init__(self, name, master, **kwargs):
-    Process.__init__(self, name, master, **kwargs)
-
-  def outReceived(self, data):
-    m = re.search("Found \d+ entities", data)
-    if m:
-      entities.clear()
-      lines = data.split()
-      for line in lines:
-        if line.startswith("0x"):
-          try:
-            entities[int(line, 16)] = 1
-          except Exception, e:
-            pass
-    Process.outReceived(self, data)
 
