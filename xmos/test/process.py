@@ -130,6 +130,14 @@ class Process(protocol.ProcessProtocol):
     else:
       self.setHistoryIndex(expect_index, len(self.output_history))
 
+  def consume(self, string):
+    log_debug("%s: consume '%s'" % (self.name, string))
+    # Remove the matching string closest to the end of the output
+    self.output_history.reverse()
+    # The string should be in the list, so don't ignore the exception
+    self.output_history.remove(string)
+    self.output_history.reverse()
+
   def clearExpectHistory(self):
     """ Clear the entire history of values seen
     """

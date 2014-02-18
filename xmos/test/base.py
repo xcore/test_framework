@@ -276,11 +276,26 @@ class SetBasedWaitable(Waitable):
           return "%s: {\n%s\n%s}" % (self.__class__.__name__, "\n".join(attrs), indent)
 
 
+class ExpectedResult(object):
+
+  def __init__(self, completed=False, started=False, timedout=False, consume=False):
+    self.completed = completed
+    self.started = started
+    self.timedout = timedout
+    self.consume = consume
+
+  def __str__(self):
+    return self.__repr__()
+
+  def __repr__(self):
+    return "(%s, %s, %s, %s)" % (self.completed, self.started, self.timedout, self.consume)
+
 class Expected(Waitable):
 
-  def __init__(self, process, pattern, timeout_time=0, func=testTimeout,
+  def __init__(self, process, pattern, timeoutTime=0, func=testTimeout,
                errorFn=testError, critical=None,
-               completionFn=None, completionArgs=None):
+               completionFn=None, completionArgs=None,
+               consumeOnMatch=False):
     if critical == None:
       critical = defaultToCriticalFailure
     self.process = process
@@ -294,6 +309,7 @@ class Expected(Waitable):
     self.completionFn = completionFn
     self.completionArgs = completionArgs
     self.prevLine = ""
+    self.consumeOnMatch = consumeOnMatch
 
   def getPrevLine(self):
     return self.prevLine
@@ -321,8 +337,9 @@ class Expected(Waitable):
     self.prevLine = string
 
     if self.timedout:
-      log_completes_expected(self, process, string, (False, False, True))
-      return (False, False, True)
+      result = ExpectedResult(timedout=True)
+      log_completes_expected(self, process, string, result)
+      return result
 
     if matches(self.process, self.pattern, process, string):
 
@@ -331,23 +348,26 @@ class Expected(Waitable):
         log_info("Possible match for %s: %s" % (self.process, self.pattern))
         res = self.completionFn(self)
         if res == False:
-          log_completes_expected(self, process, string, (False, False, False))
-          return (False, False, False)
+          result = ExpectedResult()
+          log_completes_expected(self, process, string, result)
+          return result
 
       self.cancelTimeouts()
       log_info("Success: seen match for %s: %s" % (self.process, self.pattern))
 
-      log_completes_expected(self, process, string, (True, True, False))
-      return (True, True, False)
+      result = ExpectedResult(completed=True, started=True, consume=self.consumeOnMatch)
+      log_completes_expected(self, process, string, result)
+      return result
 
-    log_completes_expected(self, process, string, (False, False, False))
-    return (False, False, False)
+    result = ExpectedResult()
+    log_completes_expected(self, process, string, result)
+    return result
 
   def timedOut(self):
     assert self.timeout
 
     # Call the function registered for timeouts
-    done = self.func(self.process, self.pattern, self.timeout_time,
+    done = self.func(self.process, self.pattern, self.timeoutTime,
                      errorFn=self.errorFn, critical=self.critical)
 
     # Remove the timeout so that we don't try to cancel it when it has fired
@@ -358,7 +378,7 @@ class Expected(Waitable):
 
   def __repr__(self):
     return "%s: '%s', timeout: %d, %s, %s" % (
-        self.process, self.pattern, self.timeout_time, self.timedout, self.func.__repr__()
+        self.process, self.pattern, self.timeoutTime, self.timedout, self.func.__repr__()
       )
 
 
@@ -377,22 +397,22 @@ class AllOf(SetBasedWaitable):
     """
     log_completes_start(self)
 
-    started = False
-    timedout = False
+    result = ExpectedResult()
     for event in self.s:
-      (event_completed, event_started, event_timedout) = event.completes(process, string)
-      started |= event_started
-      timedout |= event_timedout
+      eventResult = event.completes(process, string)
+      result.started |= eventResult.started
+      result.timedout |= eventResult.timedout
+      result.consume |= eventResult.consume
 
-      if event_completed or event_timedout:
+      if eventResult.completed or eventResult.timedout:
         self.s.remove(event)
 
-      if event_completed or event_started or event_timedout:
+      if eventResult.completed or eventResult.started or eventResult.timedout:
         break
 
-    completed = not self.s
-    log_completes_end(self, (completed, started, timedout))
-    return (completed, started, timedout)
+    result.completed = not self.s
+    log_completes_end(self, result)
+    return result
 
 
 class OneOf(SetBasedWaitable):
@@ -412,19 +432,19 @@ class OneOf(SetBasedWaitable):
     """
     log_completes_start(self)
 
-    started = False
-    timedout = False
+    result = ExpectedResult()
     to_remove = set()
     for event in self.s:
-      (event_completed, event_started, event_timedout) = event.completes(process, string)
-      started |= event_started
-      timedout |= event_timedout
+      eventResult = event.completes(process, string)
+      result.started |= eventResult.started
+      result.timedout |= eventResult.timedout
+      result.consume |= eventResult.consume
 
-      if event_completed or event_timedout:
+      if eventResult.completed or eventResult.timedout:
         to_remove |= self.s
         break
 
-      if event_started:
+      if eventResult.started:
         to_remove |= self.s - set([event])
         break
 
@@ -433,9 +453,9 @@ class OneOf(SetBasedWaitable):
     for event in to_remove:
       event.cancelTimeouts()
 
-    completed = not self.s
-    log_completes_end(self, (completed, started, timedout))
-    return (completed, started, timedout)
+    result.completed = not self.s
+    log_completes_end(self, result)
+    return result
 
 
 class NoneOf(SetBasedWaitable):
@@ -459,16 +479,17 @@ class NoneOf(SetBasedWaitable):
     log_completes_start(self)
 
     to_remove = set()
+    result = ExpectedResult()
     for event in self.s:
-      (event_completed, event_started, event_timedout) = event.completes(process, string)
+      eventResult = event.completes(process, string)
 
-      if event_completed or event_started:
+      if eventResult.completed or eventResult.started:
         self.errorFn("Seen NoneOf event %s:\n   Pattern: %s\n   Actual: %s" % (event.process, event.pattern, string), critical=self.critical)
         self.cancelTimeouts()
         self.s.clear()
         break
 
-      if event_timedout:
+      if eventResult.timedout:
         to_remove |= set([event])
 
     # Update the contents of the set and cancel timeouts from all events being removed.
@@ -476,9 +497,10 @@ class NoneOf(SetBasedWaitable):
     for event in to_remove:
       event.cancelTimeouts()
 
-    completed = not self.s
-    log_completes_end(self, (completed, completed, False))
-    return (completed, completed, False)
+    result.completed = not self.s
+    result.timedout = False
+    log_completes_end(self, result)
+    return result
 
 
 class Sequence(object):
@@ -511,26 +533,29 @@ class Sequence(object):
     """
     log_completes_start(self)
 
+    result = ExpectedResult()
     assert self.l
-    (event_completed, started, event_timedout) = self.l[0].completes(process, string)
+    eventResult = self.l[0].completes(process, string)
+    result.started = eventResult.started
+    result.consume = eventResult.consume
 
-    if event_completed:
+    if eventResult.completed:
       self.l[0].cancelTimeouts()
 
-    if event_completed or event_timedout:
+    if eventResult.completed or eventResult.timedout:
       self.l.pop(0)
 
       if self.l and self.master:
         # Enable time out of the next event in the sequence
         self.l[0].registerTimeouts(self.master)
 
-    completed = not self.l
+    result.completed = not self.l
 
     # If the last event completed then return whether that was due to a timeout.
     # Otherwise the sequence hasn't timedout yet.
-    timedout = event_timedout if completed else False
-    log_completes_end(self, (completed, started, timedout))
-    return (completed, started, timedout)
+    result.timedout = eventResult.timedout if result.completed else False
+    log_completes_end(self, result)
+    return result
 
   def __repr__(self):
     if getattr(_tls, "level", 0) > 0:

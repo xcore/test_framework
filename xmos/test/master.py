@@ -26,34 +26,43 @@ class Master():
       remove it if found.
     """
     assert self.expected
-    started = False
-    timedout = False
-    completed = True
+    result = ExpectedResult(completed=True)
     nextExpected = []
+    consumed = False
     for (i,e) in enumerate(self.expected):
-      (oneCompleted, oneStarted, oneTimedout) = e.completes(process, string)
-      started |= oneStarted
-      timedout |= oneTimedout
-
-      if (oneCompleted or oneStarted) and process in activeProcesses:
-        activeProcesses[process].moveHistoryIndex(i, string)
-
-      if oneCompleted:
-        # Need to keep something so that the indexes are not changed
-        nextExpected += [AllOf([])]
-      else:
-        completed = False
+      if consumed:
+        result.completed = False
         nextExpected += [e]
 
-    if completed:
+      else:
+        eventResult = e.completes(process, string)
+        result.started |= eventResult.started
+        result.timedout |= eventResult.timedout
+
+        if eventResult.consume:
+          # Only allow one process to match this string
+          activeProcesses[process].consume(string)
+          consumed = True
+
+        if (eventResult.completed or eventResult.started) and process in activeProcesses:
+          activeProcesses[process].moveHistoryIndex(i, string)
+
+        if eventResult.completed:
+          # Need to keep something so that the indexes are not changed
+          nextExpected += [AllOf([])]
+        else:
+          result.completed = False
+          nextExpected += [e]
+
+    if result.completed:
       self.expected = []
     else:
       self.expected = nextExpected
 
-    if completed or started:
+    if result.completed or result.started:
       self.printState("Events remaining:")
 
-    return (completed, started, timedout)
+    return result
 
   def checkAgainstHistory(self):
     """ Check through the existing process data history to
@@ -66,8 +75,8 @@ class Master():
         for process in e.getProcesses():
           for data in activeProcesses[process].getExpectHistory(i):
             log_debug("checkAgainstHistory: %s: %s" % (process, data.strip()))
-            (completed, started, timedout) = self.checkReceived(process, data)
-            changed |= started and not completed
+            result = self.checkReceived(process, data)
+            changed |= result.started and not result.completed
             if not self.expected:
               return
 
@@ -111,8 +120,8 @@ class Master():
 
   def receive(self, process, string):
     if self.expected:
-      (completed, started, timedout) = self.checkReceived(process, string)
-      if started and not completed:
+      result = self.checkReceived(process, string)
+      if result.started and not result.completed:
         self.checkAgainstHistory()
 
     if not self.expected:
