@@ -286,7 +286,7 @@ class Expected(Waitable):
     self.process = process
     self.pattern = pattern
     self.timeout = None
-    self.timeout_time = timeout_time
+    self.timeoutTime = timeoutTime
     self.func = func
     self.timedout = False
     self.errorFn = errorFn
@@ -302,10 +302,10 @@ class Expected(Waitable):
     return set([self.process])
 
   def registerTimeouts(self, master):
-    if self.timeout_time > 0:
+    if self.timeoutTime > 0:
       now = datetime.datetime.now()
-      log_debug("%s: Register timeout %s: %s %.1f" % (now.time(), self.process, self.pattern, self.timeout_time))
-      self.timeout = reactor.callLater(self.timeout_time, self.timedOut)
+      log_debug("%s: Register timeout %s: %s %.1f" % (now.time(), self.process, self.pattern, self.timeoutTime))
+      self.timeout = reactor.callLater(self.timeoutTime, self.timedOut)
       self.master = master
 
   def cancelTimeouts(self):
