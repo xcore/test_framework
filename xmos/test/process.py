@@ -29,6 +29,7 @@ class Process(protocol.ProcessProtocol):
       criticalErrors = defaultToCriticalFailure
     self.name = name
     self.master = master
+    self.send_new_line = kwargs.get('send_new_line', '\r\n')
 
     # History of all lines received from this process - can be cleared by master
     self.output_history = []
@@ -147,7 +148,7 @@ class Process(protocol.ProcessProtocol):
     """ Send a given command to a process
     """
     self.log("send: '%s'" % command, level='info')
-    self.transport.write(command + '\r\n')
+    self.transport.write(command + self.send_new_line)
 
   def checkErrorPatterns(self, data):
     for (pattern, errorFn, critical) in self.error_patterns:
